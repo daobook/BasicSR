@@ -14,12 +14,11 @@ def mod_crop(img, scale):
         ndarray: Result image.
     """
     img = img.copy()
-    if img.ndim in (2, 3):
-        h, w = img.shape[0], img.shape[1]
-        h_remainder, w_remainder = h % scale, w % scale
-        img = img[:h - h_remainder, :w - w_remainder, ...]
-    else:
+    if img.ndim not in (2, 3):
         raise ValueError(f'Wrong img ndim: {img.ndim}.')
+    h, w = img.shape[0], img.shape[1]
+    h_remainder, w_remainder = h % scale, w % scale
+    img = img[:h - h_remainder, :w - w_remainder, ...]
     return img
 
 
@@ -56,8 +55,8 @@ def paired_random_crop(img_gts, img_lqs, gt_patch_size, scale, gt_path=None):
         h_lq, w_lq = img_lqs[0].size()[-2:]
         h_gt, w_gt = img_gts[0].size()[-2:]
     else:
-        h_lq, w_lq = img_lqs[0].shape[0:2]
-        h_gt, w_gt = img_gts[0].shape[0:2]
+        h_lq, w_lq = img_lqs[0].shape[:2]
+        h_gt, w_gt = img_gts[0].shape[:2]
     lq_patch_size = gt_patch_size // scale
 
     if h_gt != h_lq * scale or w_gt != w_lq * scale:
@@ -175,5 +174,4 @@ def img_rotate(img, angle, center=None, scale=1.0):
         center = (w // 2, h // 2)
 
     matrix = cv2.getRotationMatrix2D(center, angle, scale)
-    rotated_img = cv2.warpAffine(img, matrix, (w, h))
-    return rotated_img
+    return cv2.warpAffine(img, matrix, (w, h))

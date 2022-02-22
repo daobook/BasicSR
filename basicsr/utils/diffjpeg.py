@@ -38,10 +38,7 @@ def quality_to_factor(quality):
     Returns:
         float: Compression factor.
     """
-    if quality < 50:
-        quality = 5000. / quality
-    else:
-        quality = 200. - quality * 2
+    quality = 5000. / quality if quality < 50 else 200. - quality * 2
     return quality / 100.
 
 
@@ -229,7 +226,7 @@ class CompressJpeg(nn.Module):
         """
         y, cb, cr = self.l1(image * 255)
         components = {'y': y, 'cb': cb, 'cr': cr}
-        for k in components.keys():
+        for k in components:
             comp = self.l2(components[k])
             if k in ('cb', 'cr'):
                 comp = self.c_quantize(comp, factor=factor)
@@ -261,12 +258,10 @@ class YDequantize(nn.Module):
             Tensor: batch x height x width
         """
         if isinstance(factor, (int, float)):
-            out = image * (self.y_table * factor)
-        else:
-            b = factor.size(0)
-            table = self.y_table.expand(b, 1, 8, 8) * factor.view(b, 1, 1, 1)
-            out = image * table
-        return out
+            return image * (self.y_table * factor)
+        b = factor.size(0)
+        table = self.y_table.expand(b, 1, 8, 8) * factor.view(b, 1, 1, 1)
+        return image * table
 
 
 class CDequantize(nn.Module):
@@ -286,12 +281,10 @@ class CDequantize(nn.Module):
             Tensor: batch x height x width
         """
         if isinstance(factor, (int, float)):
-            out = image * (self.c_table * factor)
-        else:
-            b = factor.size(0)
-            table = self.c_table.expand(b, 1, 8, 8) * factor.view(b, 1, 1, 1)
-            out = image * table
-        return out
+            return image * (self.c_table * factor)
+        b = factor.size(0)
+        table = self.c_table.expand(b, 1, 8, 8) * factor.view(b, 1, 1, 1)
+        return image * table
 
 
 class iDCT8x8(nn.Module):
@@ -426,7 +419,7 @@ class DeCompressJpeg(nn.Module):
             Tensor: batch x 3 x height x width
         """
         components = {'y': y, 'cb': cb, 'cr': cr}
-        for k in components.keys():
+        for k in components:
             if k in ('cb', 'cr'):
                 comp = self.c_dequantize(components[k], factor=factor)
                 height, width = int(imgh / 2), int(imgw / 2)
@@ -456,11 +449,7 @@ class DiffJPEG(nn.Module):
 
     def __init__(self, differentiable=True):
         super(DiffJPEG, self).__init__()
-        if differentiable:
-            rounding = diff_round
-        else:
-            rounding = torch.round
-
+        rounding = diff_round if differentiable else torch.round
         self.compress = CompressJpeg(rounding=rounding)
         self.decompress = DeCompressJpeg(rounding=rounding)
 

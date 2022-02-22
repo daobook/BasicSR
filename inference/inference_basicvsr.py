@@ -52,12 +52,12 @@ def main():
 
     # load data and inference
     imgs_list = sorted(glob.glob(os.path.join(input_path, '*')))
-    num_imgs = len(imgs_list)
     if len(imgs_list) <= args.interval:  # too many images may cause CUDA out of memory
         imgs, imgnames = read_img_seq(imgs_list, return_imgname=True)
         imgs = imgs.unsqueeze(0).to(device)
         inference(imgs, imgnames, model, args.save_path)
     else:
+        num_imgs = len(imgs_list)
         for idx in range(0, num_imgs, args.interval):
             interval = min(args.interval, num_imgs - idx)
             imgs, imgnames = read_img_seq(imgs_list[idx:idx + interval], return_imgname=True)

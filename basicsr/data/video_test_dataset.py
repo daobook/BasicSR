@@ -65,38 +65,37 @@ class VideoTestDataset(data.Dataset):
             subfolders_lq = sorted(glob.glob(osp.join(self.lq_root, '*')))
             subfolders_gt = sorted(glob.glob(osp.join(self.gt_root, '*')))
 
-        if opt['name'].lower() in ['vid4', 'reds4', 'redsofficial']:
-            for subfolder_lq, subfolder_gt in zip(subfolders_lq, subfolders_gt):
-                # get frame list for lq and gt
-                subfolder_name = osp.basename(subfolder_lq)
-                img_paths_lq = sorted(list(scandir(subfolder_lq, full_path=True)))
-                img_paths_gt = sorted(list(scandir(subfolder_gt, full_path=True)))
-
-                max_idx = len(img_paths_lq)
-                assert max_idx == len(img_paths_gt), (f'Different number of images in lq ({max_idx})'
-                                                      f' and gt folders ({len(img_paths_gt)})')
-
-                self.data_info['lq_path'].extend(img_paths_lq)
-                self.data_info['gt_path'].extend(img_paths_gt)
-                self.data_info['folder'].extend([subfolder_name] * max_idx)
-                for i in range(max_idx):
-                    self.data_info['idx'].append(f'{i}/{max_idx}')
-                border_l = [0] * max_idx
-                for i in range(self.opt['num_frame'] // 2):
-                    border_l[i] = 1
-                    border_l[max_idx - i - 1] = 1
-                self.data_info['border'].extend(border_l)
-
-                # cache data or save the frame list
-                if self.cache_data:
-                    logger.info(f'Cache {subfolder_name} for VideoTestDataset...')
-                    self.imgs_lq[subfolder_name] = read_img_seq(img_paths_lq)
-                    self.imgs_gt[subfolder_name] = read_img_seq(img_paths_gt)
-                else:
-                    self.imgs_lq[subfolder_name] = img_paths_lq
-                    self.imgs_gt[subfolder_name] = img_paths_gt
-        else:
+        if opt['name'].lower() not in ['vid4', 'reds4', 'redsofficial']:
             raise ValueError(f'Non-supported video test dataset: {type(opt["name"])}')
+        for subfolder_lq, subfolder_gt in zip(subfolders_lq, subfolders_gt):
+            # get frame list for lq and gt
+            subfolder_name = osp.basename(subfolder_lq)
+            img_paths_lq = sorted(list(scandir(subfolder_lq, full_path=True)))
+            img_paths_gt = sorted(list(scandir(subfolder_gt, full_path=True)))
+
+            max_idx = len(img_paths_lq)
+            assert max_idx == len(img_paths_gt), (f'Different number of images in lq ({max_idx})'
+                                                  f' and gt folders ({len(img_paths_gt)})')
+
+            self.data_info['lq_path'].extend(img_paths_lq)
+            self.data_info['gt_path'].extend(img_paths_gt)
+            self.data_info['folder'].extend([subfolder_name] * max_idx)
+            for i in range(max_idx):
+                self.data_info['idx'].append(f'{i}/{max_idx}')
+            border_l = [0] * max_idx
+            for i in range(self.opt['num_frame'] // 2):
+                border_l[i] = 1
+                border_l[max_idx - i - 1] = 1
+            self.data_info['border'].extend(border_l)
+
+            # cache data or save the frame list
+            if self.cache_data:
+                logger.info(f'Cache {subfolder_name} for VideoTestDataset...')
+                self.imgs_lq[subfolder_name] = read_img_seq(img_paths_lq)
+                self.imgs_gt[subfolder_name] = read_img_seq(img_paths_gt)
+            else:
+                self.imgs_lq[subfolder_name] = img_paths_lq
+                self.imgs_gt[subfolder_name] = img_paths_gt
 
     def __getitem__(self, index):
         folder = self.data_info['folder'][index]
@@ -271,12 +270,11 @@ class VideoRecurrentTestDataset(VideoTestDataset):
     def __getitem__(self, index):
         folder = self.folders[index]
 
-        if self.cache_data:
-            imgs_lq = self.imgs_lq[folder]
-            imgs_gt = self.imgs_gt[folder]
-        else:
+        if not self.cache_data:
             raise NotImplementedError('Without cache_data is not implemented.')
 
+        imgs_lq = self.imgs_lq[folder]
+        imgs_gt = self.imgs_gt[folder]
         return {
             'lq': imgs_lq,
             'gt': imgs_gt,

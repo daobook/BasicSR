@@ -59,8 +59,7 @@ def pdf2(sigma_matrix, grid):
         kernel (ndarrray): un-normalized kernel.
     """
     inverse_sigma = np.linalg.inv(sigma_matrix)
-    kernel = np.exp(-0.5 * np.sum(np.dot(grid, inverse_sigma) * grid, 2))
-    return kernel
+    return np.exp(-0.5 * np.sum(np.dot(grid, inverse_sigma) * grid, 2))
 
 
 def cdf2(d_matrix, grid):
@@ -77,8 +76,7 @@ def cdf2(d_matrix, grid):
     """
     rv = multivariate_normal([0, 0], [[1, 0], [0, 1]])
     grid = np.dot(grid, d_matrix)
-    cdf = rv.cdf(grid)
-    return cdf
+    return rv.cdf(grid)
 
 
 def bivariate_Gaussian(kernel_size, sig_x, sig_y, theta, grid=None, isotropic=True):
@@ -429,7 +427,7 @@ def generate_gaussian_noise(img, sigma=10, gray_noise=False):
             float32.
     """
     if gray_noise:
-        noise = np.float32(np.random.randn(*(img.shape[0:2]))) * sigma / 255.
+        noise = np.float32(np.random.randn(*img.shape[:2])) * sigma / 255.
         noise = np.expand_dims(noise, axis=2).repeat(3, axis=2)
     else:
         noise = np.float32(np.random.randn(*(img.shape))) * sigma / 255.
@@ -515,10 +513,7 @@ def add_gaussian_noise_pt(img, sigma=10, gray_noise=0, clip=True, rounds=False):
 # ----------------------- Random Gaussian Noise ----------------------- #
 def random_generate_gaussian_noise(img, sigma_range=(0, 10), gray_prob=0):
     sigma = np.random.uniform(sigma_range[0], sigma_range[1])
-    if np.random.uniform() < gray_prob:
-        gray_noise = True
-    else:
-        gray_noise = False
+    gray_noise = np.random.uniform() < gray_prob
     return generate_gaussian_noise(img, sigma, gray_noise)
 
 
@@ -685,10 +680,7 @@ def add_poisson_noise_pt(img, scale=1.0, clip=True, rounds=False, gray_noise=0):
 
 def random_generate_poisson_noise(img, scale_range=(0, 1.0), gray_prob=0):
     scale = np.random.uniform(scale_range[0], scale_range[1])
-    if np.random.uniform() < gray_prob:
-        gray_noise = True
-    else:
-        gray_noise = False
+    gray_noise = np.random.uniform() < gray_prob
     return generate_poisson_noise(img, scale, gray_noise)
 
 

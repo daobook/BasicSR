@@ -11,21 +11,16 @@ def main(mode='folder'):
     Args:
         mode: There are three modes: 'lmdb', 'folder', 'meta_info_file'.
     """
-    opt = {}
-    opt['dist'] = False
-    opt['phase'] = 'train'
+    opt = {
+        'dist': False,
+        'phase': 'train',
+        'name': 'DIV2K',
+        'type': 'PairedImageDataset',
+    }
 
-    opt['name'] = 'DIV2K'
-    opt['type'] = 'PairedImageDataset'
     if mode == 'folder':
         opt['dataroot_gt'] = 'datasets/DIV2K/DIV2K_train_HR_sub'
         opt['dataroot_lq'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X4_sub'
-        opt['filename_tmpl'] = '{}'
-        opt['io_backend'] = dict(type='disk')
-    elif mode == 'meta_info_file':
-        opt['dataroot_gt'] = 'datasets/DIV2K/DIV2K_train_HR_sub'
-        opt['dataroot_lq'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X4_sub'
-        opt['meta_info_file'] = 'basicsr/data/meta_info/meta_info_DIV2K800sub_GT.txt'  # noqa:E501
         opt['filename_tmpl'] = '{}'
         opt['io_backend'] = dict(type='disk')
     elif mode == 'lmdb':
@@ -33,6 +28,12 @@ def main(mode='folder'):
         opt['dataroot_lq'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic_X4_sub.lmdb'  # noqa:E501
         opt['io_backend'] = dict(type='lmdb')
 
+    elif mode == 'meta_info_file':
+        opt['dataroot_gt'] = 'datasets/DIV2K/DIV2K_train_HR_sub'
+        opt['dataroot_lq'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X4_sub'
+        opt['meta_info_file'] = 'basicsr/data/meta_info/meta_info_DIV2K800sub_GT.txt'  # noqa:E501
+        opt['filename_tmpl'] = '{}'
+        opt['io_backend'] = dict(type='disk')
     opt['gt_size'] = 128
     opt['use_hflip'] = True
     opt['use_rot'] = True

@@ -24,8 +24,7 @@ def download_file_from_google_drive(file_id, save_path):
     params = {'id': file_id}
 
     response = session.get(URL, params=params, stream=True)
-    token = get_confirm_token(response)
-    if token:
+    if token := get_confirm_token(response):
         params['confirm'] = token
         response = session.get(URL, params=params, stream=True)
 
@@ -40,10 +39,14 @@ def download_file_from_google_drive(file_id, save_path):
 
 
 def get_confirm_token(response):
-    for key, value in response.cookies.items():
-        if key.startswith('download_warning'):
-            return value
-    return None
+    return next(
+        (
+            value
+            for key, value in response.cookies.items()
+            if key.startswith('download_warning')
+        ),
+        None,
+    )
 
 
 def save_response_content(response, destination, file_size=None, chunk_size=32768):

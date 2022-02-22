@@ -119,8 +119,7 @@ def dequantize_flow(dx, dy, max_val=0.02, denorm=True):
     if denorm:
         dx *= dx.shape[1]
         dy *= dx.shape[0]
-    flow = np.dstack((dx, dy))
-    return flow
+    return np.dstack((dx, dy))
 
 
 def quantize(arr, min_val, max_val, levels, dtype=np.int64):
@@ -142,9 +141,9 @@ def quantize(arr, min_val, max_val, levels, dtype=np.int64):
         raise ValueError(f'min_val ({min_val}) must be smaller than max_val ({max_val})')
 
     arr = np.clip(arr, min_val, max_val) - min_val
-    quantized_arr = np.minimum(np.floor(levels * arr / (max_val - min_val)).astype(dtype), levels - 1)
-
-    return quantized_arr
+    return np.minimum(
+        np.floor(levels * arr / (max_val - min_val)).astype(dtype), levels - 1
+    )
 
 
 def dequantize(arr, min_val, max_val, levels, dtype=np.float64):
@@ -165,6 +164,4 @@ def dequantize(arr, min_val, max_val, levels, dtype=np.float64):
     if min_val >= max_val:
         raise ValueError(f'min_val ({min_val}) must be smaller than max_val ({max_val})')
 
-    dequantized_arr = (arr + 0.5).astype(dtype) * (max_val - min_val) / levels + min_val
-
-    return dequantized_arr
+    return (arr + 0.5).astype(dtype) * (max_val - min_val) / levels + min_val

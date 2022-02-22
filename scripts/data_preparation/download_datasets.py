@@ -64,7 +64,7 @@ if __name__ == '__main__':
     }
 
     if args.dataset == 'all':
-        for dataset in file_ids.keys():
+        for dataset in file_ids:
             download_dataset(dataset, file_ids[dataset])
     else:
         download_dataset(args.dataset, file_ids[args.dataset])

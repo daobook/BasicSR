@@ -47,7 +47,7 @@ def insert_bn(names):
         names_bn.append(name)
         if 'conv' in name:
             position = name.replace('conv', '')
-            names_bn.append('bn' + position)
+            names_bn.append(f'bn{position}')
     return names_bn
 
 

@@ -39,16 +39,16 @@ def main():
         Remember to modify opt configurations according to your settings.
     """
 
-    opt = {}
-    opt['n_thread'] = 20
-    opt['compression_level'] = 3
+    opt = {
+        'n_thread': 20,
+        'compression_level': 3,
+        'input_folder': 'datasets/DIV2K/DIV2K_train_HR',
+        'save_folder': 'datasets/DIV2K/DIV2K_train_HR_sub',
+        'crop_size': 480,
+        'step': 240,
+        'thresh_size': 0,
+    }
 
-    # HR images
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_HR'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_HR_sub'
-    opt['crop_size'] = 480
-    opt['step'] = 240
-    opt['thresh_size'] = 0
     extract_subimages(opt)
 
     # LRx2 images
@@ -132,7 +132,7 @@ def worker(path, opt):
 
     img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
 
-    h, w = img.shape[0:2]
+    h, w = img.shape[:2]
     h_space = np.arange(0, h - crop_size + 1, step)
     if h - (h_space[-1] + crop_size) > thresh_size:
         h_space = np.append(h_space, h - crop_size)
@@ -149,8 +149,7 @@ def worker(path, opt):
             cv2.imwrite(
                 osp.join(opt['save_folder'], f'{img_name}_s{index:03d}{extension}'), cropped_img,
                 [cv2.IMWRITE_PNG_COMPRESSION, opt['compression_level']])
-    process_info = f'Processing {img_name} ...'
-    return process_info
+    return f'Processing {img_name} ...'
 
 
 if __name__ == '__main__':

@@ -20,10 +20,13 @@ def init_tb_loggers(opt):
                                                      is not None) and ('debug' not in opt['name']):
         assert opt['logger'].get('use_tb_logger') is True, ('should turn on tensorboard when using wandb')
         init_wandb_logger(opt)
-    tb_logger = None
-    if opt['logger'].get('use_tb_logger') and 'debug' not in opt['name']:
-        tb_logger = init_tb_logger(log_dir=osp.join(opt['root_path'], 'tb_logger', opt['name']))
-    return tb_logger
+    return (
+        init_tb_logger(
+            log_dir=osp.join(opt['root_path'], 'tb_logger', opt['name'])
+        )
+        if opt['logger'].get('use_tb_logger') and 'debug' not in opt['name']
+        else None
+    )
 
 
 def create_train_val_dataloader(opt, logger):
@@ -70,14 +73,19 @@ def load_resume_state(opt):
     if opt['auto_resume']:
         state_path = osp.join('experiments', opt['name'], 'training_states')
         if osp.isdir(state_path):
-            states = list(scandir(state_path, suffix='state', recursive=False, full_path=False))
-            if len(states) != 0:
+            if states := list(
+                scandir(
+                    state_path,
+                    suffix='state',
+                    recursive=False,
+                    full_path=False,
+                )
+            ):
                 states = [float(v.split('.state')[0]) for v in states]
                 resume_state_path = osp.join(state_path, f'{max(states):.0f}.state')
                 opt['path']['resume_state'] = resume_state_path
-    else:
-        if opt['path'].get('resume_state'):
-            resume_state_path = opt['path']['resume_state']
+    elif opt['path'].get('resume_state'):
+        resume_state_path = opt['path']['resume_state']
 
     if resume_state_path is None:
         resume_state = None
@@ -174,8 +182,12 @@ def train_pipeline(root_path):
                 msg_logger.reset_start_time()
             # log
             if current_iter % opt['logger']['print_freq'] == 0:
-                log_vars = {'epoch': epoch, 'iter': current_iter}
-                log_vars.update({'lrs': model.get_current_learning_rate()})
+                log_vars = {
+                    'epoch': epoch,
+                    'iter': current_iter,
+                    'lrs': model.get_current_learning_rate(),
+                }
+
                 log_vars.update({'time': iter_timer.get_avg_time(), 'data_time': data_timer.get_avg_time()})
                 log_vars.update(model.get_current_log())
                 msg_logger(log_vars)
@@ -195,7 +207,7 @@ def train_pipeline(root_path):
             data_timer.start()
             iter_timer.start()
             train_data = prefetcher.next()
-        # end of iter
+            # end of iter
 
     # end of epoch
 

@@ -8,26 +8,22 @@ from basicsr.data import build_dataloader, build_dataset
 
 def main():
     """Test FFHQ dataset."""
-    opt = {}
-    opt['dist'] = False
-    opt['gpu_ids'] = [0]
-    opt['phase'] = 'train'
-
-    opt['name'] = 'FFHQ'
-    opt['type'] = 'FFHQDataset'
-
-    opt['dataroot_gt'] = 'datasets/ffhq/ffhq_256.lmdb'
-    opt['io_backend'] = dict(type='lmdb')
-
-    opt['use_hflip'] = True
-    opt['mean'] = [0.5, 0.5, 0.5]
-    opt['std'] = [0.5, 0.5, 0.5]
-
-    opt['use_shuffle'] = True
-    opt['num_worker_per_gpu'] = 1
-    opt['batch_size_per_gpu'] = 4
-
-    opt['dataset_enlarge_ratio'] = 1
+    opt = {
+        'dist': False,
+        'gpu_ids': [0],
+        'phase': 'train',
+        'name': 'FFHQ',
+        'type': 'FFHQDataset',
+        'dataroot_gt': 'datasets/ffhq/ffhq_256.lmdb',
+        'io_backend': dict(type='lmdb'),
+        'use_hflip': True,
+        'mean': [0.5, 0.5, 0.5],
+        'std': [0.5, 0.5, 0.5],
+        'use_shuffle': True,
+        'num_worker_per_gpu': 1,
+        'batch_size_per_gpu': 4,
+        'dataset_enlarge_ratio': 1,
+    }
 
     os.makedirs('tmp', exist_ok=True)
 

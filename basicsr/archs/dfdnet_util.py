@@ -10,8 +10,9 @@ class BlurFunctionBackward(Function):
     @staticmethod
     def forward(ctx, grad_output, kernel, kernel_flip):
         ctx.save_for_backward(kernel, kernel_flip)
-        grad_input = F.conv2d(grad_output, kernel_flip, padding=1, groups=grad_output.shape[1])
-        return grad_input
+        return F.conv2d(
+            grad_output, kernel_flip, padding=1, groups=grad_output.shape[1]
+        )
 
     @staticmethod
     def backward(ctx, gradgrad_output):
@@ -25,8 +26,7 @@ class BlurFunction(Function):
     @staticmethod
     def forward(ctx, x, kernel, kernel_flip):
         ctx.save_for_backward(kernel, kernel_flip)
-        output = F.conv2d(x, kernel, padding=1, groups=x.shape[1])
-        return output
+        return F.conv2d(x, kernel, padding=1, groups=x.shape[1])
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -139,9 +139,7 @@ class MSDilationBlock(nn.Module):
                 bias=bias))
 
     def forward(self, x):
-        out = []
-        for i in range(4):
-            out.append(self.conv_blocks[i](x))
+        out = [self.conv_blocks[i](x) for i in range(4)]
         out = torch.cat(out, 1)
         out = self.conv_fusion(out) + x
         return out
@@ -158,5 +156,4 @@ class UpResBlock(nn.Module):
         )
 
     def forward(self, x):
-        out = x + self.body(x)
-        return out
+        return x + self.body(x)

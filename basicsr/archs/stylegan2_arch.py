@@ -62,8 +62,9 @@ class UpFirDnUpsample(nn.Module):
         self.pad = ((pad + 1) // 2 + factor - 1, pad // 2)
 
     def forward(self, x):
-        out = upfirdn2d(x, self.kernel.type_as(x), up=self.factor, down=1, pad=self.pad)
-        return out
+        return upfirdn2d(
+            x, self.kernel.type_as(x), up=self.factor, down=1, pad=self.pad
+        )
 
     def __repr__(self):
         return (f'{self.__class__.__name__}(factor={self.factor})')
@@ -87,8 +88,9 @@ class UpFirDnDownsample(nn.Module):
         self.pad = ((pad + 1) // 2, pad // 2)
 
     def forward(self, x):
-        out = upfirdn2d(x, self.kernel.type_as(x), up=1, down=self.factor, pad=self.pad)
-        return out
+        return upfirdn2d(
+            x, self.kernel.type_as(x), up=1, down=self.factor, pad=self.pad
+        )
 
     def __repr__(self):
         return (f'{self.__class__.__name__}(factor={self.factor})')
@@ -123,8 +125,7 @@ class UpFirDnSmooth(nn.Module):
             raise NotImplementedError
 
     def forward(self, x):
-        out = upfirdn2d(x, self.kernel.type_as(x), up=1, down=1, pad=self.pad)
-        return out
+        return upfirdn2d(x, self.kernel.type_as(x), up=1, down=1, pad=self.pad)
 
     def __repr__(self):
         return (f'{self.__class__.__name__}(upsample_factor={self.upsample_factor}'
@@ -163,10 +164,7 @@ class EqualLinear(nn.Module):
             self.register_parameter('bias', None)
 
     def forward(self, x):
-        if self.bias is None:
-            bias = None
-        else:
-            bias = self.bias * self.lr_mul
+        bias = None if self.bias is None else self.bias * self.lr_mul
         if self.activation == 'fused_lrelu':
             out = F.linear(x, self.weight * self.scale)
             out = fused_leaky_relu(out, bias)
@@ -222,9 +220,7 @@ class ModulatedConv2d(nn.Module):
         elif self.sample_mode == 'downsample':
             self.smooth = UpFirDnSmooth(
                 resample_kernel, upsample_factor=1, downsample_factor=2, kernel_size=kernel_size)
-        elif self.sample_mode is None:
-            pass
-        else:
+        elif self.sample_mode is not None:
             raise ValueError(f'Wrong sample mode {self.sample_mode}, '
                              "supported ones are ['upsample', 'downsample', None].")
 
@@ -387,8 +383,7 @@ class ConstantInput(nn.Module):
         self.weight = nn.Parameter(torch.randn(1, num_channel, size, size))
 
     def forward(self, batch):
-        out = self.weight.repeat(batch, 1, 1, 1)
-        return out
+        return self.weight.repeat(batch, 1, 1, 1)
 
 
 @ARCH_REGISTRY.register()
@@ -420,11 +415,18 @@ class StyleGAN2Generator(nn.Module):
         # Style MLP layers
         self.num_style_feat = num_style_feat
         style_mlp_layers = [NormStyleCode()]
-        for i in range(num_mlp):
-            style_mlp_layers.append(
-                EqualLinear(
-                    num_style_feat, num_style_feat, bias=True, bias_init_val=0, lr_mul=lr_mlp,
-                    activation='fused_lrelu'))
+        style_mlp_layers.extend(
+            EqualLinear(
+                num_style_feat,
+                num_style_feat,
+                bias=True,
+                bias_init_val=0,
+                lr_mul=lr_mlp,
+                activation='fused_lrelu',
+            )
+            for _ in range(num_mlp)
+        )
+
         self.style_mlp = nn.Sequential(*style_mlp_layers)
 
         channels = {
@@ -496,9 +498,7 @@ class StyleGAN2Generator(nn.Module):
         noises = [torch.randn(1, 1, 4, 4, device=device)]
 
         for i in range(3, self.log_size + 1):
-            for _ in range(2):
-                noises.append(torch.randn(1, 1, 2**i, 2**i, device=device))
-
+            noises.extend(torch.randn(1, 1, 2**i, 2**i, device=device) for _ in range(2))
         return noises
 
     def get_latent(self, x):
@@ -506,8 +506,7 @@ class StyleGAN2Generator(nn.Module):
 
     def mean_latent(self, num_latent):
         latent_in = torch.randn(num_latent, self.num_style_feat, device=self.constant_input.weight.device)
-        latent = self.style_mlp(latent_in).mean(0, keepdim=True)
-        return latent
+        return self.style_mlp(latent_in).mean(0, keepdim=True)
 
     def forward(self,
                 styles,
@@ -545,9 +544,11 @@ class StyleGAN2Generator(nn.Module):
                 noise = [getattr(self.noises, f'noise{i}') for i in range(self.num_layers)]
         # style truncation
         if truncation < 1:
-            style_truncation = []
-            for style in styles:
-                style_truncation.append(truncation_latent + truncation * (style - truncation_latent))
+            style_truncation = [
+                truncation_latent + truncation * (style - truncation_latent)
+                for style in styles
+            ]
+
             styles = style_truncation
         # get style latent with injection
         if len(styles) == 1:
@@ -580,10 +581,7 @@ class StyleGAN2Generator(nn.Module):
 
         image = skip
 
-        if return_latents:
-            return image, latent
-        else:
-            return image, None
+        return (image, latent) if return_latents else (image, None)
 
 
 class ScaledLeakyReLU(nn.Module):
@@ -633,15 +631,13 @@ class EqualConv2d(nn.Module):
             self.register_parameter('bias', None)
 
     def forward(self, x):
-        out = F.conv2d(
+        return F.conv2d(
             x,
             self.weight * self.scale,
             bias=self.bias,
             stride=self.stride,
             padding=self.padding,
         )
-
-        return out
 
     def __repr__(self):
         return (f'{self.__class__.__name__}(in_channels={self.in_channels}, '

@@ -121,10 +121,10 @@ class HiFaceGANModel(SRModel):
         self.optimizer_g.zero_grad()
         self.output = self.net_g(self.lq)
 
-        l_g_total = 0
         loss_dict = OrderedDict()
 
         if (current_iter % self.net_d_iters == 0 and current_iter > self.net_d_init_iters):
+            l_g_total = 0
             # pixel loss
             if self.cri_pix:
                 l_g_pix = self.cri_pix(self.output, self.gt)
@@ -230,7 +230,7 @@ class HiFaceGANModel(SRModel):
         dataset_name = dataloader.dataset.opt['name']
         with_metrics = self.opt['val'].get('metrics') is not None
         if with_metrics:
-            self.metric_results = dict()  # {metric: 0 for metric in self.opt['val']['metrics'].keys()}
+            self.metric_results = {}
             sr_tensors = []
             gt_tensors = []
 
@@ -255,13 +255,12 @@ class HiFaceGANModel(SRModel):
                 if self.opt['is_train']:
                     save_img_path = osp.join(self.opt['path']['visualization'], img_name,
                                              f'{img_name}_{current_iter}.png')
+                elif self.opt['val']['suffix']:
+                    save_img_path = osp.join(self.opt['path']['visualization'], dataset_name,
+                                             f'{img_name}_{self.opt["val"]["suffix"]}.png')
                 else:
-                    if self.opt['val']['suffix']:
-                        save_img_path = osp.join(self.opt['path']['visualization'], dataset_name,
-                                                 f'{img_name}_{self.opt["val"]["suffix"]}.png')
-                    else:
-                        save_img_path = osp.join(self.opt['path']['visualization'], dataset_name,
-                                                 f'{img_name}_{self.opt["name"]}.png')
+                    save_img_path = osp.join(self.opt['path']['visualization'], dataset_name,
+                                             f'{img_name}_{self.opt["name"]}.png')
 
                 imwrite(tensor2img(visuals['result']), save_img_path)
 

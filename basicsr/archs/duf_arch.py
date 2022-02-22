@@ -99,7 +99,7 @@ class DenseBlocks(nn.Module):
             momentum = 0.1
 
         self.dense_blocks = nn.ModuleList()
-        for i in range(0, num_block):
+        for i in range(num_block):
             self.dense_blocks.append(
                 nn.Sequential(
                     nn.BatchNorm3d(num_feat + i * num_grow_ch, eps=eps, momentum=momentum), nn.ReLU(inplace=True),
@@ -125,7 +125,7 @@ class DenseBlocks(nn.Module):
         Returns:
             Tensor: Output with shape (b, num_feat + num_block * num_grow_ch, t, h, w).
         """
-        for i in range(0, len(self.dense_blocks)):
+        for i in range(len(self.dense_blocks)):
             y = self.dense_blocks[i](x)
             x = torch.cat((x, y), 1)
         return x

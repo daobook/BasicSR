@@ -39,7 +39,7 @@ class VideoBaseModel(SRModel):
             for _, tensor in self.metric_results.items():
                 tensor.zero_()
 
-        metric_data = dict()
+        metric_data = {}
         # record all frames (border and center frames)
         if rank == 0:
             pbar = tqdm(total=len(dataset), unit='frame')
@@ -69,19 +69,18 @@ class VideoBaseModel(SRModel):
             if save_img:
                 if self.opt['is_train']:
                     raise NotImplementedError('saving image is not supported during training.')
-                else:
-                    if 'vimeo' in dataset_name.lower():  # vimeo90k dataset
-                        split_result = lq_path.split('/')
-                        img_name = f'{split_result[-3]}_{split_result[-2]}_{split_result[-1].split(".")[0]}'
-                    else:  # other datasets, e.g., REDS, Vid4
-                        img_name = osp.splitext(osp.basename(lq_path))[0]
+                if 'vimeo' in dataset_name.lower():  # vimeo90k dataset
+                    split_result = lq_path.split('/')
+                    img_name = f'{split_result[-3]}_{split_result[-2]}_{split_result[-1].split(".")[0]}'
+                else:  # other datasets, e.g., REDS, Vid4
+                    img_name = osp.splitext(osp.basename(lq_path))[0]
 
-                    if self.opt['val']['suffix']:
-                        save_img_path = osp.join(self.opt['path']['visualization'], dataset_name, folder,
-                                                 f'{img_name}_{self.opt["val"]["suffix"]}.png')
-                    else:
-                        save_img_path = osp.join(self.opt['path']['visualization'], dataset_name, folder,
-                                                 f'{img_name}_{self.opt["name"]}.png')
+                if self.opt['val']['suffix']:
+                    save_img_path = osp.join(self.opt['path']['visualization'], dataset_name, folder,
+                                             f'{img_name}_{self.opt["val"]["suffix"]}.png')
+                else:
+                    save_img_path = osp.join(self.opt['path']['visualization'], dataset_name, folder,
+                                             f'{img_name}_{self.opt["name"]}.png')
                 imwrite(result_img, save_img_path)
 
             if with_metrics:
@@ -104,9 +103,6 @@ class VideoBaseModel(SRModel):
                 for _, tensor in self.metric_results.items():
                     dist.reduce(tensor, 0)
                 dist.barrier()
-            else:
-                pass  # assume use one gpu in non-dist testing
-
             if rank == 0:
                 self._log_validation_metric_values(current_iter, dataset_name, tb_logger)
 
@@ -135,7 +131,7 @@ class VideoBaseModel(SRModel):
             for idx, metric in enumerate(total_avg_results.keys()):
                 total_avg_results[metric] += metric_results_avg[folder][idx].item()
         # average among folders
-        for metric in total_avg_results.keys():
+        for metric in total_avg_results:
             total_avg_results[metric] /= len(metric_results_avg)
             # update the best metric result
             self._update_best_metric_result(dataset_name, metric, total_avg_results[metric], current_iter)

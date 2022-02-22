@@ -43,8 +43,7 @@ class SpyNet(nn.Module):
         self.register_buffer('std', torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1))
 
     def preprocess(self, tensor_input):
-        tensor_output = (tensor_input - self.mean) / self.std
-        return tensor_output
+        return (tensor_input - self.mean) / self.std
 
     def process(self, ref, supp):
         flow = []
@@ -52,7 +51,7 @@ class SpyNet(nn.Module):
         ref = [self.preprocess(ref)]
         supp = [self.preprocess(supp)]
 
-        for level in range(5):
+        for _ in range(5):
             ref.insert(0, F.avg_pool2d(input=ref[0], kernel_size=2, stride=2, count_include_pad=False))
             supp.insert(0, F.avg_pool2d(input=supp[0], kernel_size=2, stride=2, count_include_pad=False))
 

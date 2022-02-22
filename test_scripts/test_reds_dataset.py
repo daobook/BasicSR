@@ -11,12 +11,7 @@ def main(mode='folder'):
     Args:
         mode: There are two modes: 'lmdb', 'folder'.
     """
-    opt = {}
-    opt['dist'] = False
-    opt['phase'] = 'train'
-
-    opt['name'] = 'REDS'
-    opt['type'] = 'REDSDataset'
+    opt = {'dist': False, 'phase': 'train', 'name': 'REDS', 'type': 'REDSDataset'}
     if mode == 'folder':
         opt['dataroot_gt'] = 'datasets/REDS/train_sharp'
         opt['dataroot_lq'] = 'datasets/REDS/train_sharp_bicubic'

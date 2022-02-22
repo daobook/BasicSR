@@ -80,7 +80,10 @@ class CosineAnnealingRestartLR(_LRScheduler):
         self.eta_min = eta_min
         assert (len(self.periods) == len(
             self.restart_weights)), 'periods and restart_weights should have the same length.'
-        self.cumulative_period = [sum(self.periods[0:i + 1]) for i in range(0, len(self.periods))]
+        self.cumulative_period = [
+            sum(self.periods[: i + 1]) for i in range(len(self.periods))
+        ]
+
         super(CosineAnnealingRestartLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):

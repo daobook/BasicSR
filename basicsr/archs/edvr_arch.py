@@ -216,7 +216,10 @@ class PredeblurModule(nn.Module):
         self.resblock_l3 = ResidualBlockNoBN(num_feat=num_feat)
         self.resblock_l2_1 = ResidualBlockNoBN(num_feat=num_feat)
         self.resblock_l2_2 = ResidualBlockNoBN(num_feat=num_feat)
-        self.resblock_l1 = nn.ModuleList([ResidualBlockNoBN(num_feat=num_feat) for i in range(5)])
+        self.resblock_l1 = nn.ModuleList(
+            [ResidualBlockNoBN(num_feat=num_feat) for _ in range(5)]
+        )
+
 
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
         self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)

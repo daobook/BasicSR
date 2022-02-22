@@ -147,7 +147,7 @@ class SRModel(BaseModel):
         if with_metrics:
             self.metric_results = {metric: 0 for metric in self.metric_results}
 
-        metric_data = dict()
+        metric_data = {}
         if use_pbar:
             pbar = tqdm(total=len(dataloader), unit='image')
 
@@ -173,13 +173,12 @@ class SRModel(BaseModel):
                 if self.opt['is_train']:
                     save_img_path = osp.join(self.opt['path']['visualization'], img_name,
                                              f'{img_name}_{current_iter}.png')
+                elif self.opt['val']['suffix']:
+                    save_img_path = osp.join(self.opt['path']['visualization'], dataset_name,
+                                             f'{img_name}_{self.opt["val"]["suffix"]}.png')
                 else:
-                    if self.opt['val']['suffix']:
-                        save_img_path = osp.join(self.opt['path']['visualization'], dataset_name,
-                                                 f'{img_name}_{self.opt["val"]["suffix"]}.png')
-                    else:
-                        save_img_path = osp.join(self.opt['path']['visualization'], dataset_name,
-                                                 f'{img_name}_{self.opt["name"]}.png')
+                    save_img_path = osp.join(self.opt['path']['visualization'], dataset_name,
+                                             f'{img_name}_{self.opt["name"]}.png')
                 imwrite(sr_img, save_img_path)
 
             if with_metrics:

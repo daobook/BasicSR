@@ -48,11 +48,7 @@ class PairedImageDataset(data.Dataset):
         self.std = opt['std'] if 'std' in opt else None
 
         self.gt_folder, self.lq_folder = opt['dataroot_gt'], opt['dataroot_lq']
-        if 'filename_tmpl' in opt:
-            self.filename_tmpl = opt['filename_tmpl']
-        else:
-            self.filename_tmpl = '{}'
-
+        self.filename_tmpl = opt['filename_tmpl'] if 'filename_tmpl' in opt else '{}'
         if self.io_backend_opt['type'] == 'lmdb':
             self.io_backend_opt['db_paths'] = [self.lq_folder, self.gt_folder]
             self.io_backend_opt['client_keys'] = ['lq', 'gt']

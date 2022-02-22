@@ -89,19 +89,21 @@ class StyleGAN2Model(BaseModel):
         train_opt = self.opt['train']
         # optimizer g
         net_g_reg_ratio = self.net_g_reg_every / (self.net_g_reg_every + 1)
+        normal_params = []
         if self.opt['network_g']['type'] == 'StyleGAN2GeneratorC':
-            normal_params = []
             style_mlp_params = []
             modulation_conv_params = []
             for name, param in self.net_g.named_parameters():
-                if 'modulation' in name:
+                if (
+                    'modulation' in name
+                    or 'style_mlp' not in name
+                    and 'modulated_conv' not in name
+                ):
                     normal_params.append(param)
                 elif 'style_mlp' in name:
                     style_mlp_params.append(param)
-                elif 'modulated_conv' in name:
-                    modulation_conv_params.append(param)
                 else:
-                    normal_params.append(param)
+                    modulation_conv_params.append(param)
             optim_params_g = [
                 {  # add normal params first
                     'params': normal_params,
@@ -117,9 +119,7 @@ class StyleGAN2Model(BaseModel):
                 }
             ]
         else:
-            normal_params = []
-            for name, param in self.net_g.named_parameters():
-                normal_params.append(param)
+            normal_params.extend(param for name, param in self.net_g.named_parameters())
             optim_params_g = [{  # add normal params first
                 'params': normal_params,
                 'lr': train_opt['optim_g']['lr']
@@ -152,9 +152,7 @@ class StyleGAN2Model(BaseModel):
                 }
             ]
         else:
-            normal_params = []
-            for name, param in self.net_d.named_parameters():
-                normal_params.append(param)
+            normal_params = [param for name, param in self.net_d.named_parameters()]
             optim_params_d = [{  # add normal params first
                 'params': normal_params,
                 'lr': train_opt['optim_d']['lr']
@@ -170,11 +168,13 @@ class StyleGAN2Model(BaseModel):
         self.real_img = data['gt'].to(self.device)
 
     def make_noise(self, batch, num_noise):
-        if num_noise == 1:
-            noises = torch.randn(batch, self.num_style_feat, device=self.device)
-        else:
-            noises = torch.randn(num_noise, batch, self.num_style_feat, device=self.device).unbind(0)
-        return noises
+        return (
+            torch.randn(batch, self.num_style_feat, device=self.device)
+            if num_noise == 1
+            else torch.randn(
+                num_noise, batch, self.num_style_feat, device=self.device
+            ).unbind(0)
+        )
 
     def mixing_noise(self, batch, prob):
         if random.random() < prob:

@@ -64,18 +64,17 @@ class FaceRestorationHelper(object):
         det_faces = self.face_detector(self.input_img, upsample_num_times)
         if len(det_faces) == 0:
             print('No face detected. Try to increase upsample_num_times.')
+        elif only_keep_largest:
+            print('Detect several faces and only keep the largest.')
+            face_areas = []
+            for i in range(len(det_faces)):
+                face_area = (det_faces[i].rect.right() - det_faces[i].rect.left()) * (
+                    det_faces[i].rect.bottom() - det_faces[i].rect.top())
+                face_areas.append(face_area)
+            largest_idx = face_areas.index(max(face_areas))
+            self.det_faces = [det_faces[largest_idx]]
         else:
-            if only_keep_largest:
-                print('Detect several faces and only keep the largest.')
-                face_areas = []
-                for i in range(len(det_faces)):
-                    face_area = (det_faces[i].rect.right() - det_faces[i].rect.left()) * (
-                        det_faces[i].rect.bottom() - det_faces[i].rect.top())
-                    face_areas.append(face_area)
-                largest_idx = face_areas.index(max(face_areas))
-                self.det_faces = [det_faces[largest_idx]]
-            else:
-                self.det_faces = det_faces
+            self.det_faces = det_faces
         return len(self.det_faces)
 
     def get_face_landmarks_5(self):

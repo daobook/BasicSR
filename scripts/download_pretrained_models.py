@@ -106,7 +106,7 @@ if __name__ == '__main__':
     }
 
     if args.method == 'all':
-        for method in file_ids.keys():
+        for method in file_ids:
             download_pretrained_models(method, file_ids[method])
     else:
         download_pretrained_models(args.method, file_ids[args.method])
