@@ -117,7 +117,7 @@ class DFDNet(nn.Module):
         select_idx = torch.argmax(similarity_score)
         swap_feat = F.interpolate(dict_feat[select_idx:select_idx + 1], part_feat.size()[2:4])
         # attention
-        attn = self.attn_blocks[f'{part_name}_' + str(f_size)](swap_feat - part_feat)
+        attn = self.attn_blocks[f'{part_name}_{str(f_size)}'](swap_feat - part_feat)
         attn_feat = attn * swap_feat
         # update features
         updated_feat[:, :, location[1]:location[3], location[0]:location[2]] = attn_feat + part_feat
@@ -164,6 +164,4 @@ class DFDNet(nn.Module):
         upsampled_feat = self.upsample1(upsampled_feat, updated_vgg_features[2])
         upsampled_feat = self.upsample2(upsampled_feat, updated_vgg_features[1])
         upsampled_feat = self.upsample3(upsampled_feat, updated_vgg_features[0])
-        out = self.upsample4(upsampled_feat)
-
-        return out
+        return self.upsample4(upsampled_feat)

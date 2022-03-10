@@ -22,8 +22,7 @@ def drop_path(x, drop_prob: float = 0., training: bool = False):
     shape = (x.shape[0], ) + (1, ) * (x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
     random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
     random_tensor.floor_()  # binarize
-    output = x.div(keep_prob) * random_tensor
-    return output
+    return x.div(keep_prob) * random_tensor
 
 
 class DropPath(nn.Module):
@@ -71,8 +70,11 @@ def window_partition(x, window_size):
     """
     b, h, w, c = x.shape
     x = x.view(b, h // window_size, window_size, w // window_size, window_size, c)
-    windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size, window_size, c)
-    return windows
+    return (
+        x.permute(0, 1, 3, 2, 4, 5)
+        .contiguous()
+        .view(-1, window_size, window_size, c)
+    )
 
 
 def window_reverse(windows, window_size, h, w):
@@ -163,10 +165,7 @@ class WindowAttention(nn.Module):
             nw = mask.shape[0]
             attn = attn.view(b_ // nw, nw, self.num_heads, n, n) + mask.unsqueeze(1).unsqueeze(0)
             attn = attn.view(-1, self.num_heads, n, n)
-            attn = self.softmax(attn)
-        else:
-            attn = self.softmax(attn)
-
+        attn = self.softmax(attn)
         attn = self.attn_drop(attn)
 
         x = (attn @ v).transpose(1, 2).reshape(b_, n, c)
@@ -457,10 +456,7 @@ class BasicLayer(nn.Module):
 
     def forward(self, x, x_size):
         for blk in self.blocks:
-            if self.use_checkpoint:
-                x = checkpoint.checkpoint(blk, x)
-            else:
-                x = blk(x, x_size)
+            x = checkpoint.checkpoint(blk, x) if self.use_checkpoint else blk(x, x_size)
         if self.downsample is not None:
             x = self.downsample(x)
         return x
@@ -469,9 +465,7 @@ class BasicLayer(nn.Module):
         return f'dim={self.dim}, input_resolution={self.input_resolution}, depth={self.depth}'
 
     def flops(self):
-        flops = 0
-        for blk in self.blocks:
-            flops += blk.flops()
+        flops = sum(blk.flops() for blk in self.blocks)
         if self.downsample is not None:
             flops += self.downsample.flops()
         return flops
@@ -592,10 +586,7 @@ class PatchEmbed(nn.Module):
         self.in_chans = in_chans
         self.embed_dim = embed_dim
 
-        if norm_layer is not None:
-            self.norm = norm_layer(embed_dim)
-        else:
-            self.norm = None
+        self.norm = norm_layer(embed_dim) if norm_layer is not None else None
 
     def forward(self, x):
         x = x.flatten(2).transpose(1, 2)  # b Ph*Pw c
@@ -640,8 +631,7 @@ class PatchUnEmbed(nn.Module):
         return x
 
     def flops(self):
-        flops = 0
-        return flops
+        return 0
 
 
 class Upsample(nn.Sequential):
@@ -656,11 +646,9 @@ class Upsample(nn.Sequential):
         m = []
         if (scale & (scale - 1)) == 0:  # scale = 2^n
             for _ in range(int(math.log(scale, 2))):
-                m.append(nn.Conv2d(num_feat, 4 * num_feat, 3, 1, 1))
-                m.append(nn.PixelShuffle(2))
+                m.extend((nn.Conv2d(num_feat, 4 * num_feat, 3, 1, 1), nn.PixelShuffle(2)))
         elif scale == 3:
-            m.append(nn.Conv2d(num_feat, 9 * num_feat, 3, 1, 1))
-            m.append(nn.PixelShuffle(3))
+            m.extend((nn.Conv2d(num_feat, 9 * num_feat, 3, 1, 1), nn.PixelShuffle(3)))
         else:
             raise ValueError(f'scale {scale} is not supported. Supported scales: 2^n and 3.')
         super(Upsample, self).__init__(*m)
@@ -679,15 +667,13 @@ class UpsampleOneStep(nn.Sequential):
     def __init__(self, scale, num_feat, num_out_ch, input_resolution=None):
         self.num_feat = num_feat
         self.input_resolution = input_resolution
-        m = []
-        m.append(nn.Conv2d(num_feat, (scale**2) * num_out_ch, 3, 1, 1))
+        m = [nn.Conv2d(num_feat, (scale**2) * num_out_ch, 3, 1, 1)]
         m.append(nn.PixelShuffle(scale))
         super(UpsampleOneStep, self).__init__(*m)
 
     def flops(self):
         h, w = self.input_resolution
-        flops = h * w * self.num_feat * 3 * 9
-        return flops
+        return h * w * self.num_feat * 3 * 9
 
 
 @ARCH_REGISTRY.register()

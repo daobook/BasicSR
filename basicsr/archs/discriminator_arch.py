@@ -17,8 +17,11 @@ class VGGStyleDiscriminator(nn.Module):
     def __init__(self, num_in_ch, num_feat, input_size=128):
         super(VGGStyleDiscriminator, self).__init__()
         self.input_size = input_size
-        assert self.input_size == 128 or self.input_size == 256, (
-            f'input size must be 128 or 256, but received {input_size}')
+        assert self.input_size in [
+            128,
+            256,
+        ], f'input size must be 128 or 256, but received {input_size}'
+
 
         self.conv0_0 = nn.Conv2d(num_in_ch, num_feat, 3, 1, 1, bias=True)
         self.conv0_1 = nn.Conv2d(num_feat, num_feat, 4, 2, 1, bias=False)
@@ -81,5 +84,4 @@ class VGGStyleDiscriminator(nn.Module):
         # spatial size: (4, 4)
         feat = feat.view(feat.size(0), -1)
         feat = self.lrelu(self.linear1(feat))
-        out = self.linear2(feat)
-        return out
+        return self.linear2(feat)

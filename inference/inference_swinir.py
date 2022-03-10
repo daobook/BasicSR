@@ -39,11 +39,7 @@ def main():
     model.eval()
     model = model.to(device)
 
-    if args.task == 'jpeg_car':
-        window_size = 7
-    else:
-        window_size = 8
-
+    window_size = 7 if args.task == 'jpeg_car' else 8
     for idx, path in enumerate(sorted(glob.glob(os.path.join(args.input, '*')))):
         # read image
         imgname = os.path.splitext(os.path.basename(path))[0]
@@ -186,10 +182,7 @@ def define_model(args):
             resi_connection='1conv')
 
     loadnet = torch.load(args.model_path)
-    if 'params_ema' in loadnet:
-        keyname = 'params_ema'
-    else:
-        keyname = 'params'
+    keyname = 'params_ema' if 'params_ema' in loadnet else 'params'
     model.load_state_dict(loadnet[keyname], strict=True)
 
     return model

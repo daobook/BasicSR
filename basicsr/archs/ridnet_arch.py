@@ -180,5 +180,4 @@ class RIDNet(nn.Module):
         res = self.tail(self.body(self.relu(self.head(res))))
         res = self.add_mean(res)
 
-        out = x + res
-        return out
+        return x + res

@@ -56,7 +56,10 @@ def tensor2img(tensor, rgb2bgr=True, out_type=np.uint8, min_max=(0, 1)):
         (Tensor or list): 3D ndarray of shape (H x W x C) OR 2D ndarray of
         shape (H x W). The channel order is BGR.
     """
-    if not (torch.is_tensor(tensor) or (isinstance(tensor, list) and all(torch.is_tensor(t) for t in tensor))):
+    if not torch.is_tensor(tensor) and (
+        not isinstance(tensor, list)
+        or not all(torch.is_tensor(t) for t in tensor)
+    ):
         raise TypeError(f'tensor or list of tensors expected, got {type(tensor)}')
 
     if torch.is_tensor(tensor):
@@ -77,9 +80,8 @@ def tensor2img(tensor, rgb2bgr=True, out_type=np.uint8, min_max=(0, 1)):
             img_np = img_np.transpose(1, 2, 0)
             if img_np.shape[2] == 1:  # gray image
                 img_np = np.squeeze(img_np, axis=2)
-            else:
-                if rgb2bgr:
-                    img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+            elif rgb2bgr:
+                img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
         elif n_dim == 2:
             img_np = _tensor.numpy()
         else:
@@ -165,8 +167,7 @@ def crop_border(imgs, crop_border):
     """
     if crop_border == 0:
         return imgs
+    if isinstance(imgs, list):
+        return [v[crop_border:-crop_border, crop_border:-crop_border, ...] for v in imgs]
     else:
-        if isinstance(imgs, list):
-            return [v[crop_border:-crop_border, crop_border:-crop_border, ...] for v in imgs]
-        else:
-            return imgs[crop_border:-crop_border, crop_border:-crop_border, ...]
+        return imgs[crop_border:-crop_border, crop_border:-crop_border, ...]

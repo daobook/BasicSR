@@ -79,11 +79,7 @@ class SPADEGenerator(BaseNetwork):
         x = self.g_middle_0(x, seg)
         x = self.g_middle_1(x, seg)
 
-        if self.is_train:
-            phase = self.train_phase + 1
-        else:
-            phase = len(self.to_rgbs)
-
+        phase = self.train_phase + 1 if self.is_train else len(self.to_rgbs)
         for i in range(phase):
             x = self.up(x)
             x = self.ups[i](x, seg)
@@ -106,11 +102,7 @@ class SPADEGenerator(BaseNetwork):
         if seg is None:
             return self.forward(input_x)
 
-        if self.is_train:
-            phase = self.train_phase + 1
-        else:
-            phase = len(self.to_rgbs)
-
+        phase = self.train_phase + 1 if self.is_train else len(self.to_rgbs)
         if mode == 'progressive':
             n = max(min(n, 4 + phase), 0)
             guide_list = [input_x] * n + [seg] * (4 + phase - n)
@@ -245,7 +237,7 @@ class NLayerDiscriminator(BaseNetwork):
 
         # We divide the layers into groups to extract intermediate layer outputs
         for n in range(len(sequence)):
-            self.add_module('model' + str(n), nn.Sequential(*sequence[n]))
+            self.add_module(f'model{str(n)}', nn.Sequential(*sequence[n]))
 
     def forward(self, x):
         results = [x]
@@ -253,7 +245,4 @@ class NLayerDiscriminator(BaseNetwork):
             intermediate_output = submodel(results[-1])
             results.append(intermediate_output)
 
-        if self.keep_features:
-            return results[1:]
-        else:
-            return results[-1]
+        return results[1:] if self.keep_features else results[-1]

@@ -18,10 +18,7 @@ def convert_celeba_tfrecords(tf_file, log_resolution, save_root, save_type='img'
         save_type (str): Save type. Options: img | lmdb. Default: img.
         compress_level (int):  Compress level when encoding images. Default: 1.
     """
-    if 'validation' in tf_file:
-        phase = 'validation'
-    else:
-        phase = 'train'
+    phase = 'validation' if 'validation' in tf_file else 'train'
     if save_type == 'lmdb':
         save_path = os.path.join(save_root, f'celeba_{2**log_resolution}_{phase}.lmdb')
         lmdb_maker = LmdbMaker(save_path)
@@ -127,12 +124,11 @@ def make_ffhq_lmdb_from_imgs(folder_path, log_resolution, save_root, save_type='
         compress_level (int):  Compress level when encoding images. Default: 1.
     """
 
-    if save_type == 'lmdb':
-        save_path = os.path.join(save_root, f'ffhq_{2**log_resolution}_crop1.2.lmdb')
-        lmdb_maker = LmdbMaker(save_path)
-    else:
+    if save_type != 'lmdb':
         raise ValueError('Wrong save type.')
 
+    save_path = os.path.join(save_root, f'ffhq_{2**log_resolution}_crop1.2.lmdb')
+    lmdb_maker = LmdbMaker(save_path)
     os.makedirs(save_path, exist_ok=True)
 
     img_list = sorted(glob.glob(os.path.join(folder_path, '*')))

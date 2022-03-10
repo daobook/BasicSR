@@ -140,9 +140,7 @@ class WeightedTVLoss(L1Loss):
         y_diff = super().forward(pred[:, :, :-1, :], pred[:, :, 1:, :], weight=y_weight)
         x_diff = super().forward(pred[:, :, :, :-1], pred[:, :, :, 1:], weight=x_weight)
 
-        loss = x_diff + y_diff
-
-        return loss
+        return x_diff + y_diff
 
 
 @LOSS_REGISTRY.register()
@@ -213,26 +211,35 @@ class PerceptualLoss(nn.Module):
 
         # calculate perceptual loss
         if self.perceptual_weight > 0:
-            percep_loss = 0
-            for k in x_features.keys():
-                if self.criterion_type == 'fro':
-                    percep_loss += torch.norm(x_features[k] - gt_features[k], p='fro') * self.layer_weights[k]
-                else:
-                    percep_loss += self.criterion(x_features[k], gt_features[k]) * self.layer_weights[k]
+            percep_loss = sum(
+                torch.norm(x_features[k] - gt_features[k], p='fro')
+                * self.layer_weights[k]
+                if self.criterion_type == 'fro'
+                else self.criterion(x_features[k], gt_features[k])
+                * self.layer_weights[k]
+                for k in x_features.keys()
+            )
+
             percep_loss *= self.perceptual_weight
         else:
             percep_loss = None
 
         # calculate style loss
         if self.style_weight > 0:
-            style_loss = 0
-            for k in x_features.keys():
-                if self.criterion_type == 'fro':
-                    style_loss += torch.norm(
-                        self._gram_mat(x_features[k]) - self._gram_mat(gt_features[k]), p='fro') * self.layer_weights[k]
-                else:
-                    style_loss += self.criterion(self._gram_mat(x_features[k]), self._gram_mat(
-                        gt_features[k])) * self.layer_weights[k]
+            style_loss = sum(
+                torch.norm(
+                    self._gram_mat(x_features[k]) - self._gram_mat(gt_features[k]),
+                    p='fro',
+                )
+                * self.layer_weights[k]
+                if self.criterion_type == 'fro'
+                else self.criterion(
+                    self._gram_mat(x_features[k]), self._gram_mat(gt_features[k])
+                )
+                * self.layer_weights[k]
+                for k in x_features.keys()
+            )
+
             style_loss *= self.style_weight
         else:
             style_loss = None
@@ -251,8 +258,7 @@ class PerceptualLoss(nn.Module):
         n, c, h, w = x.size()
         features = x.view(n, c, w * h)
         features_t = features.transpose(1, 2)
-        gram = features.bmm(features_t) / (c * h * w)
-        return gram
+        return features.bmm(features_t) / (c * h * w)
 
 
 @LOSS_REGISTRY.register()
@@ -373,19 +379,18 @@ class MultiScaleGANLoss(GANLoss):
         """
         The input is a list of tensors, or a list of (a list of tensors)
         """
-        if isinstance(input, list):
-            loss = 0
-            for pred_i in input:
-                if isinstance(pred_i, list):
-                    # Only compute GAN loss for the last layer
-                    # in case of multiscale feature matching
-                    pred_i = pred_i[-1]
-                # Safe operation: 0-dim tensor calling self.mean() does nothing
-                loss_tensor = super().forward(pred_i, target_is_real, is_disc).mean()
-                loss += loss_tensor
-            return loss / len(input)
-        else:
+        if not isinstance(input, list):
             return super().forward(input, target_is_real, is_disc)
+        loss = 0
+        for pred_i in input:
+            if isinstance(pred_i, list):
+                # Only compute GAN loss for the last layer
+                # in case of multiscale feature matching
+                pred_i = pred_i[-1]
+            # Safe operation: 0-dim tensor calling self.mean() does nothing
+            loss_tensor = super().forward(pred_i, target_is_real, is_disc).mean()
+            loss += loss_tensor
+        return loss / len(input)
 
 
 def r1_penalty(real_pred, real_img):
@@ -401,8 +406,7 @@ def r1_penalty(real_pred, real_img):
         Eq. 9 in Which training methods for GANs do actually converge.
         """
     grad_real = autograd.grad(outputs=real_pred.sum(), inputs=real_img, create_graph=True)[0]
-    grad_penalty = grad_real.pow(2).view(grad_real.shape[0], -1).sum(1).mean()
-    return grad_penalty
+    return grad_real.pow(2).view(grad_real.shape[0], -1).sum(1).mean()
 
 
 def g_path_regularize(fake_img, latents, mean_path_length, decay=0.01):

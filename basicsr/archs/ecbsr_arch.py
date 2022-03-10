@@ -113,7 +113,7 @@ class SeqConv3x3(nn.Module):
             y0[:, :, :, 0:1] = b0_pad
             y0[:, :, :, -1:] = b0_pad
             # conv-3x3
-            y1 = F.conv2d(input=y0, weight=self.k1, bias=self.b1, stride=1)
+            return F.conv2d(input=y0, weight=self.k1, bias=self.b1, stride=1)
         else:
             y0 = F.conv2d(input=x, weight=self.k0, bias=self.b0, stride=1)
             # explicitly padding with bias
@@ -124,8 +124,13 @@ class SeqConv3x3(nn.Module):
             y0[:, :, :, 0:1] = b0_pad
             y0[:, :, :, -1:] = b0_pad
             # conv-3x3
-            y1 = F.conv2d(input=y0, weight=self.scale * self.mask, bias=self.bias, stride=1, groups=self.out_channels)
-        return y1
+            return F.conv2d(
+                input=y0,
+                weight=self.scale * self.mask,
+                bias=self.bias,
+                stride=1,
+                groups=self.out_channels,
+            )
 
     def rep_params(self):
         device = self.k0.get_device()
@@ -174,11 +179,7 @@ class ECB(nn.Module):
         self.out_channels = out_channels
         self.act_type = act_type
 
-        if with_idt and (self.in_channels == self.out_channels):
-            self.with_idt = True
-        else:
-            self.with_idt = False
-
+        self.with_idt = bool(with_idt and (self.in_channels == self.out_channels))
         self.conv3x3 = torch.nn.Conv2d(self.in_channels, self.out_channels, kernel_size=3, padding=1)
         self.conv1x1_3x3 = SeqConv3x3('conv1x1-conv3x3', self.in_channels, self.out_channels, self.depth_multiplier)
         self.conv1x1_sbx = SeqConv3x3('conv1x1-sobelx', self.in_channels, self.out_channels)
@@ -193,9 +194,7 @@ class ECB(nn.Module):
             self.act = nn.RReLU(lower=-0.05, upper=0.05)
         elif self.act_type == 'softplus':
             self.act = nn.Softplus()
-        elif self.act_type == 'linear':
-            pass
-        else:
+        elif self.act_type != 'linear':
             raise ValueError('The type of activation if not support!')
 
     def forward(self, x):

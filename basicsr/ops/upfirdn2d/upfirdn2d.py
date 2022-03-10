@@ -151,12 +151,19 @@ class UpFirDn2d(Function):
 
 
 def upfirdn2d(input, kernel, up=1, down=1, pad=(0, 0)):
-    if input.device.type == 'cpu':
-        out = upfirdn2d_native(input, kernel, up, up, down, down, pad[0], pad[1], pad[0], pad[1])
-    else:
-        out = UpFirDn2d.apply(input, kernel, (up, up), (down, down), (pad[0], pad[1], pad[0], pad[1]))
-
-    return out
+    return (
+        upfirdn2d_native(
+            input, kernel, up, up, down, down, pad[0], pad[1], pad[0], pad[1]
+        )
+        if input.device.type == 'cpu'
+        else UpFirDn2d.apply(
+            input,
+            kernel,
+            (up, up),
+            (down, down),
+            (pad[0], pad[1], pad[0], pad[1]),
+        )
+    )
 
 
 def upfirdn2d_native(input, kernel, up_x, up_y, down_x, down_y, pad_x0, pad_x1, pad_y0, pad_y1):

@@ -187,7 +187,7 @@ class REDSDataset(data.Dataset):
             img_results = augment(img_lqs, self.opt['use_hflip'], self.opt['use_rot'])
 
         img_results = img2tensor(img_results)
-        img_lqs = torch.stack(img_results[0:-1], dim=0)
+        img_lqs = torch.stack(img_results[:-1], dim=0)
         img_gt = img_results[-1]
 
         if self.flow_root is not None:

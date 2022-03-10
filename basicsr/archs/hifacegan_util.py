@@ -19,18 +19,18 @@ class SPADE(nn.Module):
         param_free_norm_type = str(parsed.group(1))
         ks = int(parsed.group(2))
 
-        if param_free_norm_type == 'instance':
+        if param_free_norm_type == 'batch':
+            self.param_free_norm = nn.BatchNorm2d(norm_nc, affine=False)
+        elif param_free_norm_type == 'instance':
             self.param_free_norm = nn.InstanceNorm2d(norm_nc)
         elif param_free_norm_type == 'syncbatch':
             print('SyncBatchNorm is currently not supported under single-GPU mode, switch to "instance" instead')
             self.param_free_norm = nn.InstanceNorm2d(norm_nc)
-        elif param_free_norm_type == 'batch':
-            self.param_free_norm = nn.BatchNorm2d(norm_nc, affine=False)
         else:
             raise ValueError(f'{param_free_norm_type} is not a recognized param-free norm type in SPADE')
 
         # The dimension of the intermediate embedding space. Yes, hardcoded.
-        nhidden = 128 if norm_nc > 128 else norm_nc
+        nhidden = min(norm_nc, 128)
 
         pw = ks // 2
         self.mlp_shared = nn.Sequential(nn.Conv2d(label_nc, nhidden, kernel_size=ks, padding=pw), nn.ReLU())
@@ -48,10 +48,7 @@ class SPADE(nn.Module):
         gamma = self.mlp_gamma(actv)
         beta = self.mlp_beta(actv)
 
-        # apply scale and bias
-        out = normalized * gamma + beta
-
-        return out
+        return normalized * gamma + beta
 
 
 class SPADEResnetBlock(nn.Module):
@@ -96,15 +93,10 @@ class SPADEResnetBlock(nn.Module):
         x_s = self.shortcut(x, seg)
         dx = self.conv_0(self.act(self.norm_0(x, seg)))
         dx = self.conv_1(self.act(self.norm_1(dx, seg)))
-        out = x_s + dx
-        return out
+        return x_s + dx
 
     def shortcut(self, x, seg):
-        if self.learned_shortcut:
-            x_s = self.conv_s(self.norm_s(x, seg))
-        else:
-            x_s = x
-        return x_s
+        return self.conv_s(self.norm_s(x, seg)) if self.learned_shortcut else x
 
     def act(self, x):
         return F.leaky_relu(x, 2e-1)
@@ -175,8 +167,7 @@ class SimplifiedLIP(nn.Module):
         self.logit[0].weight.data.fill_(0.0)
 
     def forward(self, x):
-        frac = lip2d(x, self.logit(x))
-        return frac
+        return lip2d(x, self.logit(x))
 
 
 class LIPEncoder(BaseNetwork):

@@ -28,7 +28,7 @@ def mkdir_and_rename(path):
         path (str): Folder path.
     """
     if osp.exists(path):
-        new_name = path + '_archived_' + get_time_str()
+        new_name = f'{path}_archived_{get_time_str()}'
         print(f'Path already exists. Rename it to {new_name}', flush=True)
         os.rename(path, new_name)
     os.makedirs(path, exist_ok=True)
@@ -73,20 +73,17 @@ def scandir(dir_path, suffix=None, recursive=False, full_path=False):
     def _scandir(dir_path, suffix, recursive):
         for entry in os.scandir(dir_path):
             if not entry.name.startswith('.') and entry.is_file():
-                if full_path:
-                    return_path = entry.path
-                else:
-                    return_path = osp.relpath(entry.path, root)
-
-                if suffix is None:
+                return_path = entry.path if full_path else osp.relpath(entry.path, root)
+                if (
+                    suffix is None
+                    or suffix is not None
+                    and return_path.endswith(suffix)
+                ):
                     yield return_path
-                elif return_path.endswith(suffix):
-                    yield return_path
+            elif recursive:
+                yield from _scandir(entry.path, suffix=suffix, recursive=recursive)
             else:
-                if recursive:
-                    yield from _scandir(entry.path, suffix=suffix, recursive=recursive)
-                else:
-                    continue
+                continue
 
     return _scandir(dir_path, suffix=suffix, recursive=recursive)
 
@@ -98,30 +95,31 @@ def check_resume(opt, resume_iter):
         opt (dict): Options.
         resume_iter (int): Resume iteration.
     """
-    if opt['path']['resume_state']:
-        # get all the networks
-        networks = [key for key in opt.keys() if key.startswith('network_')]
-        flag_pretrain = False
-        for network in networks:
-            if opt['path'].get(f'pretrain_{network}') is not None:
-                flag_pretrain = True
-        if flag_pretrain:
-            print('pretrain_network path will be ignored during resuming.')
-        # set pretrained model paths
-        for network in networks:
-            name = f'pretrain_{network}'
-            basename = network.replace('network_', '')
-            if opt['path'].get('ignore_resume_networks') is None or (network
-                                                                     not in opt['path']['ignore_resume_networks']):
-                opt['path'][name] = osp.join(opt['path']['models'], f'net_{basename}_{resume_iter}.pth')
-                print(f"Set {name} to {opt['path'][name]}")
+    if not opt['path']['resume_state']:
+        return
+    # get all the networks
+    networks = [key for key in opt.keys() if key.startswith('network_')]
+    flag_pretrain = False
+    for network in networks:
+        if opt['path'].get(f'pretrain_{network}') is not None:
+            flag_pretrain = True
+    if flag_pretrain:
+        print('pretrain_network path will be ignored during resuming.')
+    # set pretrained model paths
+    for network in networks:
+        name = f'pretrain_{network}'
+        basename = network.replace('network_', '')
+        if opt['path'].get('ignore_resume_networks') is None or (network
+                                                                 not in opt['path']['ignore_resume_networks']):
+            opt['path'][name] = osp.join(opt['path']['models'], f'net_{basename}_{resume_iter}.pth')
+            print(f"Set {name} to {opt['path'][name]}")
 
-        # change param_key to params in resume
-        param_keys = [key for key in opt['path'].keys() if key.startswith('param_key')]
-        for param_key in param_keys:
-            if opt['path'][param_key] == 'params_ema':
-                opt['path'][param_key] = 'params'
-                print(f'Set {param_key} to params')
+    # change param_key to params in resume
+    param_keys = [key for key in opt['path'].keys() if key.startswith('param_key')]
+    for param_key in param_keys:
+        if opt['path'][param_key] == 'params_ema':
+            opt['path'][param_key] = 'params'
+            print(f'Set {param_key} to params')
 
 
 def sizeof_fmt(size, suffix='B'):

@@ -50,11 +50,7 @@ def convert_net_d(ori_net, crt_net):
     """Convert network discriminator."""
 
     for crt_k, _ in crt_net.items():
-        if 'conv_body' in crt_k:
-            ori_k = crt_k.replace('conv_body', 'convs')
-        else:
-            ori_k = crt_k
-
+        ori_k = crt_k.replace('conv_body', 'convs') if 'conv_body' in crt_k else crt_k
         # replace
         if crt_net[crt_k].size() != ori_net[ori_k].size():
             raise ValueError('Wrong tensor size: \n'

@@ -19,8 +19,7 @@ class ToyDiscriminator(nn.Module):
         feat = self.lrelu(self.bn0(self.conv0(x)))
         feat = self.lrelu(self.bn1(self.conv1(feat)))
         feat = feat.view(feat.size(0), -1)
-        out = torch.sigmoid(self.linear(feat))
-        return out
+        return torch.sigmoid(self.linear(feat))
 
 
 def main():

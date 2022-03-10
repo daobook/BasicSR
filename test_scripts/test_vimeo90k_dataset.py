@@ -11,12 +11,13 @@ def main(mode='folder'):
     Args:
         mode: There are two modes: 'lmdb', 'folder'.
     """
-    opt = {}
-    opt['dist'] = False
-    opt['phase'] = 'train'
+    opt = {
+        'dist': False,
+        'phase': 'train',
+        'name': 'Vimeo90K',
+        'type': 'Vimeo90KDataset',
+    }
 
-    opt['name'] = 'Vimeo90K'
-    opt['type'] = 'Vimeo90KDataset'
     if mode == 'folder':
         opt['dataroot_gt'] = 'datasets/vimeo90k/vimeo_septuplet/sequences'
         opt['dataroot_lq'] = 'datasets/vimeo90k/vimeo_septuplet_matlabLRx4/sequences'  # noqa E501

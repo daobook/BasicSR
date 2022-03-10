@@ -29,12 +29,7 @@ def default_init_weights(module_list, scale=1, bias_fill=0, **kwargs):
         module_list = [module_list]
     for module in module_list:
         for m in module.modules():
-            if isinstance(m, nn.Conv2d):
-                init.kaiming_normal_(m.weight, **kwargs)
-                m.weight.data *= scale
-                if m.bias is not None:
-                    m.bias.data.fill_(bias_fill)
-            elif isinstance(m, nn.Linear):
+            if isinstance(m, (nn.Conv2d, nn.Linear)):
                 init.kaiming_normal_(m.weight, **kwargs)
                 m.weight.data *= scale
                 if m.bias is not None:
@@ -55,9 +50,7 @@ def make_layer(basic_block, num_basic_block, **kwarg):
     Returns:
         nn.Sequential: Stacked blocks in nn.Sequential.
     """
-    layers = []
-    for _ in range(num_basic_block):
-        layers.append(basic_block(**kwarg))
+    layers = [basic_block(**kwarg) for _ in range(num_basic_block)]
     return nn.Sequential(*layers)
 
 
@@ -104,11 +97,9 @@ class Upsample(nn.Sequential):
         m = []
         if (scale & (scale - 1)) == 0:  # scale = 2^n
             for _ in range(int(math.log(scale, 2))):
-                m.append(nn.Conv2d(num_feat, 4 * num_feat, 3, 1, 1))
-                m.append(nn.PixelShuffle(2))
+                m.extend((nn.Conv2d(num_feat, 4 * num_feat, 3, 1, 1), nn.PixelShuffle(2)))
         elif scale == 3:
-            m.append(nn.Conv2d(num_feat, 9 * num_feat, 3, 1, 1))
-            m.append(nn.PixelShuffle(3))
+            m.extend((nn.Conv2d(num_feat, 9 * num_feat, 3, 1, 1), nn.PixelShuffle(3)))
         else:
             raise ValueError(f'scale {scale} is not supported. Supported scales: 2^n and 3.')
         super(Upsample, self).__init__(*m)
@@ -142,10 +133,14 @@ def flow_warp(x, flow, interp_mode='bilinear', padding_mode='zeros', align_corne
     vgrid_x = 2.0 * vgrid[:, :, :, 0] / max(w - 1, 1) - 1.0
     vgrid_y = 2.0 * vgrid[:, :, :, 1] / max(h - 1, 1) - 1.0
     vgrid_scaled = torch.stack((vgrid_x, vgrid_y), dim=3)
-    output = F.grid_sample(x, vgrid_scaled, mode=interp_mode, padding_mode=padding_mode, align_corners=align_corners)
-
     # TODO, what if align_corners=False
-    return output
+    return F.grid_sample(
+        x,
+        vgrid_scaled,
+        mode=interp_mode,
+        padding_mode=padding_mode,
+        align_corners=align_corners,
+    )
 
 
 def resize_flow(flow, size_type, sizes, interp_mode='bilinear', align_corners=False):
@@ -181,9 +176,12 @@ def resize_flow(flow, size_type, sizes, interp_mode='bilinear', align_corners=Fa
     ratio_w = output_w / flow_w
     input_flow[:, 0, :, :] *= ratio_w
     input_flow[:, 1, :, :] *= ratio_h
-    resized_flow = F.interpolate(
-        input=input_flow, size=(output_h, output_w), mode=interp_mode, align_corners=align_corners)
-    return resized_flow
+    return F.interpolate(
+        input=input_flow,
+        size=(output_h, output_w),
+        mode=interp_mode,
+        align_corners=align_corners,
+    )
 
 
 # TODO: may write a cpp file
@@ -304,9 +302,7 @@ def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
 def _ntuple(n):
 
     def parse(x):
-        if isinstance(x, collections.abc.Iterable):
-            return x
-        return tuple(repeat(x, n))
+        return x if isinstance(x, collections.abc.Iterable) else tuple(repeat(x, n))
 
     return parse
 

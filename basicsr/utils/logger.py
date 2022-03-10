@@ -118,8 +118,7 @@ class MessageLogger():
 @master_only
 def init_tb_logger(log_dir):
     from torch.utils.tensorboard import SummaryWriter
-    tb_logger = SummaryWriter(log_dir=log_dir)
-    return tb_logger
+    return SummaryWriter(log_dir=log_dir)
 
 
 @master_only
@@ -129,8 +128,7 @@ def init_wandb_logger(opt):
     logger = get_root_logger()
 
     project = opt['logger']['wandb']['project']
-    resume_id = opt['logger']['wandb'].get('resume_id')
-    if resume_id:
+    if resume_id := opt['logger']['wandb'].get('resume_id'):
         wandb_id = resume_id
         resume = 'allow'
         logger.warning(f'Resume wandb logger with id={wandb_id}.')

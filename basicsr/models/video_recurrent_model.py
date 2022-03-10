@@ -87,7 +87,7 @@ class VideoRecurrentModel(VideoBaseModel):
             for _, tensor in self.metric_results.items():
                 tensor.zero_()
 
-        metric_data = dict()
+        metric_data = {}
         num_folders = len(dataset)
         num_pad = (world_size - (num_folders % world_size)) % world_size
         if rank == 0:
@@ -135,17 +135,15 @@ class VideoRecurrentModel(VideoBaseModel):
                     if save_img:
                         if self.opt['is_train']:
                             raise NotImplementedError('saving image is not supported during training.')
-                        else:
-                            if self.center_frame_only:  # vimeo-90k
-                                clip_ = val_data['lq_path'].split('/')[-3]
-                                seq_ = val_data['lq_path'].split('/')[-2]
-                                name_ = f'{clip_}_{seq_}'
-                                img_path = osp.join(self.opt['path']['visualization'], dataset_name, folder,
-                                                    f"{name_}_{self.opt['name']}.png")
-                            else:  # others
-                                img_path = osp.join(self.opt['path']['visualization'], dataset_name, folder,
-                                                    f"{idx:08d}_{self.opt['name']}.png")
-                            # image name only for REDS dataset
+                        if self.center_frame_only:  # vimeo-90k
+                            clip_ = val_data['lq_path'].split('/')[-3]
+                            seq_ = val_data['lq_path'].split('/')[-2]
+                            name_ = f'{clip_}_{seq_}'
+                            img_path = osp.join(self.opt['path']['visualization'], dataset_name, folder,
+                                                f"{name_}_{self.opt['name']}.png")
+                        else:  # others
+                            img_path = osp.join(self.opt['path']['visualization'], dataset_name, folder,
+                                                f"{idx:08d}_{self.opt['name']}.png")
                         imwrite(result_img, img_path)
 
                     # calculate metrics

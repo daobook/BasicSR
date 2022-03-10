@@ -88,6 +88,4 @@ def calculate_fid(mu1, sigma1, mu2, sigma2, eps=1e-6):
     mean_diff = mu1 - mu2
     mean_norm = mean_diff @ mean_diff
     trace = np.trace(sigma1) + np.trace(sigma2) - 2 * np.trace(cov_sqrt)
-    fid = mean_norm + trace
-
-    return fid
+    return mean_norm + trace

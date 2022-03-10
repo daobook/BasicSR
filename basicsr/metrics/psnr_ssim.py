@@ -122,7 +122,5 @@ def calculate_ssim(img, img2, crop_border, input_order='HWC', test_y_channel=Fal
         img = to_y_channel(img)
         img2 = to_y_channel(img2)
 
-    ssims = []
-    for i in range(img.shape[2]):
-        ssims.append(_ssim(img[..., i], img2[..., i]))
+    ssims = [_ssim(img[..., i], img2[..., i]) for i in range(img.shape[2])]
     return np.array(ssims).mean()

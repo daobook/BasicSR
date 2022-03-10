@@ -119,9 +119,9 @@ class VideoRecurrentGANModel(VideoRecurrentModel):
 
         _, _, c, h, w = self.output.size()
 
-        l_g_total = 0
         loss_dict = OrderedDict()
         if (current_iter % self.net_d_iters == 0 and current_iter > self.net_d_init_iters):
+            l_g_total = 0
             # pixel loss
             if self.cri_pix:
                 l_g_pix = self.cri_pix(self.output, self.gt)
